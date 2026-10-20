@@ -1,4 +1,5 @@
-﻿using System.Windows.Controls;
+﻿using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using BootProject.Models;
 
@@ -6,10 +7,12 @@ namespace BootProject
 {
     public partial class KatalogCartaControl : UserControl
     {
+        public Product Product { get; private set; }
+
         public KatalogCartaControl(Product product)
         {
             InitializeComponent();
-
+            Product = product;
             DataContext = product;
 
             if (product != null && product.IsLowStock)
