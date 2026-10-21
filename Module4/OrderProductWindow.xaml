@@ -1,0 +1,133 @@
+﻿<Window
+    x:Class="BootProject.OrderProductWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Информация о товаре"
+    MinWidth="800"
+    MinHeight="500"
+    Background="{StaticResource main}"
+    WindowStartupLocation="CenterScreen">
+    <Grid Margin="15">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border
+            Grid.Column="0"
+            Background="White"
+            BorderBrush="{StaticResource akcent}"
+            BorderThickness="1">
+            <Image
+                Margin="10"
+                Source="{Binding ImagePath}"
+                Stretch="Uniform" />
+        </Border>
+
+        <StackPanel Grid.Column="1" Margin="20,0,0,0">
+            <TextBlock
+                FontSize="22"
+                FontWeight="Bold"
+                Foreground="Black"
+                Text="{Binding Name}"
+                TextWrapping="Wrap" />
+            <TextBlock
+                Margin="0,5,0,5"
+                FontSize="16"
+                Foreground="Black"
+                Text="{Binding Manufacturer, StringFormat='Производство: {0}'}" />
+            <TextBlock
+                Margin="0,0,0,5"
+                FontSize="14"
+                Foreground="Black"
+                Text="{Binding Category, StringFormat='Категория: {0}'}" />
+            <TextBlock
+                Margin="0,0,0,10"
+                FontSize="14"
+                Foreground="Black"
+                Text="{Binding Composition, StringFormat='Состав: {0}'}" />
+            <TextBlock
+                Margin="0,0,0,15"
+                FontSize="24"
+                FontWeight="Bold"
+                Foreground="Black"
+                Text="{Binding FinalPrice, StringFormat='Цена со скидкой: {0:N0} ₽'}" />
+            <TextBlock
+                MaxHeight="60"
+                Margin="0,0,0,10"
+                Foreground="Black"
+                Text="{Binding Description, StringFormat='Описание: {0}'}"
+                TextWrapping="Wrap" />
+
+            <StackPanel Margin="0,15,0,0" Orientation="Horizontal">
+                <TextBlock
+                    Margin="0,0,5,0"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Размер:" />
+                <ComboBox
+                    x:Name="SizeComboBox"
+                    Width="80"
+                    Height="30"
+                    DisplayMemberPath="SizeValue"
+                    SelectionChanged="SizeComboBox_SelectionChanged" />
+                <TextBlock
+                    x:Name="StockInfoText"
+                    Margin="10,0,20,0"
+                    VerticalAlignment="Center"
+                    FontWeight="Bold"
+                    Foreground="Black" />
+                <TextBlock
+                    Margin="0,0,5,0"
+                    VerticalAlignment="Center"
+                    FontWeight="SemiBold"
+                    Text="Кол-во:" />
+                <Button
+                    x:Name="MinusButton"
+                    Width="30"
+                    Height="30"
+                    Background="#D2F6E7"
+                    BorderThickness="0"
+                    Click="MinusButton_Click"
+                    Content="−" />
+                <TextBox
+                    x:Name="QuantityTextBox"
+                    Width="40"
+                    Height="30"
+                    Margin="5,0"
+                    VerticalContentAlignment="Center"
+                    Foreground="Black"
+                    IsReadOnly="True"
+                    Text="1"
+                    TextAlignment="Center" />
+                <Button
+                    x:Name="PlusButton"
+                    Width="30"
+                    Height="30"
+                    Background="#D2F6E7"
+                    BorderThickness="0"
+                    Click="PlusButton_Click"
+                    Content="+" />
+            </StackPanel>
+
+            <StackPanel Margin="0,20,0,0" Orientation="Horizontal">
+                <Button
+                    x:Name="AddToCartButton"
+                    Width="160"
+                    Height="35"
+                    Click="AddToCart_Click"
+                    Content="Добавить в корзину"
+                    Style="{StaticResource navbarButton}" />
+                <!--  НОВАЯ КНОПКА ЗАКРЫТЬ  -->
+                <Button
+                    Width="120"
+                    Height="35"
+                    Margin="10,0,0,0"
+                    Background="#555555"
+                    Click="Close_Click"
+                    Content="Закрыть"
+                    Style="{StaticResource navbarButton}" />
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
