@@ -7,6 +7,7 @@
     MinHeight="500"
     Background="{StaticResource main}"
     WindowStartupLocation="CenterScreen">
+
     <Grid Margin="15">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300" />
@@ -71,12 +72,14 @@
                     Height="30"
                     DisplayMemberPath="SizeValue"
                     SelectionChanged="SizeComboBox_SelectionChanged" />
+
                 <TextBlock
                     x:Name="StockInfoText"
                     Margin="10,0,20,0"
                     VerticalAlignment="Center"
                     FontWeight="Bold"
                     Foreground="Black" />
+
                 <TextBlock
                     Margin="0,0,5,0"
                     VerticalAlignment="Center"
@@ -115,10 +118,9 @@
                     x:Name="AddToCartButton"
                     Width="160"
                     Height="35"
-                    Click="AddToCart_Click"
-                    Content="Добавить в корзину"
+                    Click="Order_Click"
+                    Content="Заказать"
                     Style="{StaticResource navbarButton}" />
-                <!--  НОВАЯ КНОПКА ЗАКРЫТЬ  -->
                 <Button
                     Width="120"
                     Height="35"

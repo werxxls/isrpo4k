@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 using BootProject.Data;
@@ -13,8 +12,6 @@ namespace BootProject
         private readonly Product _product;
         private readonly User _user;
         private int _maxQuantity = 0;
-
-        public static List<CartItem> SharedCart = new List<CartItem>();
 
         public OrderProductWindow(Product product, User user)
         {
@@ -63,37 +60,38 @@ namespace BootProject
             }
         }
 
-        private void AddToCart_Click(object sender, RoutedEventArgs e)
+        private void Order_Click(object sender, RoutedEventArgs e)
         {
             if (!(SizeComboBox.SelectedItem is SizeInfo selectedSize) || _maxQuantity == 0) return;
             if (!int.TryParse(QuantityTextBox.Text, out int qty) || qty <= 0) return;
 
-            var existingItem = SharedCart.Find(c => c.ProductId == _product.ProductId && c.SizeId == selectedSize.SizeId);
-
-            if (existingItem != null)
+            if (qty > _maxQuantity)
             {
-                if (existingItem.Quantity + qty <= _maxQuantity)
-                    existingItem.Quantity += qty;
-                else
-                {
-                    MessageBox.Show("Превышено доступное количество на складе!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-            }
-            else
-            {
-                SharedCart.Add(new CartItem
-                {
-                    ProductId = _product.ProductId,
-                    SizeId = selectedSize.SizeId,
-                    ProductName = _product.Name,
-                    SizeValue = selectedSize.SizeValue,
-                    Price = _product.FinalPrice,
-                    Quantity = qty
-                });
+                MessageBox.Show($"На складе только {_maxQuantity} шт.!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
 
-            MessageBox.Show("Товар успешно добавлен в корзину!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+            decimal totalPrice = _product.FinalPrice * qty;
+
+            var result = MessageBox.Show(
+                $"Вы действительно хотите заказать {qty} шт. размера {selectedSize.SizeValue}?\n\n" +
+                $"Сумма заказа: {totalPrice:N0} ₽",
+                "Подтверждение заказа",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result != MessageBoxResult.Yes) return;
+
+            try
+            {
+                _db.CreateOrder(_user.Login, _product.ProductId, selectedSize.SizeId, qty);
+                MessageBox.Show("Заказ успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
+                this.Close();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
         private void Close_Click(object sender, RoutedEventArgs e) => this.Close();

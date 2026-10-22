@@ -55,11 +55,15 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Page Include="AdminManagerWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="AuthUserWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="CartWindow.xaml">
+    <Page Include="EditOrderWindow.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -75,6 +79,9 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
+    <Compile Include="AdminManagerWindow.xaml.cs">
+      <DependentUpon>AdminManagerWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
       <SubType>Code</SubType>
@@ -82,10 +89,10 @@
     <Compile Include="AuthUserWindow.xaml.cs">
       <DependentUpon>AuthUserWindow.xaml</DependentUpon>
     </Compile>
-    <Compile Include="CartWindow.xaml.cs">
-      <DependentUpon>CartWindow.xaml</DependentUpon>
-    </Compile>
     <Compile Include="Data\DatabaseContext.cs" />
+    <Compile Include="EditOrderWindow.xaml.cs">
+      <DependentUpon>EditOrderWindow.xaml</DependentUpon>
+    </Compile>
     <Compile Include="KatalogCartaControl.xaml.cs">
       <DependentUpon>KatalogCartaControl.xaml</DependentUpon>
     </Compile>
@@ -100,14 +107,21 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
+    <Page Include="OrdersManageWindow.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Models\CartItem.cs" />
+    <Compile Include="Models\OrderInfo.cs" />
     <Compile Include="Models\Product.cs" />
     <Compile Include="Models\SizeInfo.cs" />
     <Compile Include="Models\User.cs" />
     <Compile Include="OrderProductWindow.xaml.cs">
       <DependentUpon>OrderProductWindow.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="OrdersManageWindow.xaml.cs">
+      <DependentUpon>OrdersManageWindow.xaml</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs">
       <SubType>Code</SubType>

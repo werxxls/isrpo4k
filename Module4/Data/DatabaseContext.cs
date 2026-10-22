@@ -46,14 +46,14 @@ namespace BootProject.Data
         public List<Product> GetProducts(bool isAuthorized, string login)
         {
             var products = new List<Product>();
-            // ИЗМЕНЕНО: Проверяем заказы за последние 30 дней
+
             const string sql = @"
                 SELECT p.ProductId, p.ProductName, p.Cost, p.PictureHref, p.Description,
                        m.Name AS ManufacturerName, c.CategoryName, 
                        ISNULL(SUM(s.Quantity), 0) AS TotalQuantity,
                        (SELECT COUNT(*) FROM Orders o 
                         WHERE o.ProductId = p.ProductId AND o.UserLogin = @login
-                        AND o.OrderDate >= DATEADD(day, -30, GETDATE())) AS UserRecentOrders
+                        AND o.OrderDate >= DATEADD(day, -30, GETDATE())) AS RecentOrders
                 FROM Product p
                 LEFT JOIN ProductManufactor pm ON pm.ProductId = p.ProductId
                 LEFT JOIN Manufactor m        ON m.ManufactorId = pm.ManufactorId
@@ -75,21 +75,20 @@ namespace BootProject.Data
                         while (reader.Read())
                         {
                             decimal basePrice = Convert.ToDecimal(reader["Cost"]);
-                            int userRecentOrders = Convert.ToInt32(reader["UserRecentOrders"]);
+                            int recentOrders = Convert.ToInt32(reader["RecentOrders"]);
 
-                            // Если пользователь НЕ покупал этот товар за последние 30 дней, даем скидку 25%
-                            decimal finalPrice = (isAuthorized && userRecentOrders == 0) ? basePrice * 0.75m : basePrice;
+                            decimal finalPrice = (isAuthorized && recentOrders == 0) ? basePrice * 0.75m : basePrice;
 
                             products.Add(new Product
                             {
                                 ProductId = Convert.ToInt32(reader["ProductId"]),
-                                Name = reader["ProductName"].ToString(),
+                                Name = Convert.ToString(reader["ProductName"]),
                                 Price = basePrice,
                                 FinalPrice = finalPrice,
-                                Image = reader["PictureHref"] != DBNull.Value ? reader["PictureHref"].ToString() : null,
-                                Manufacturer = reader["ManufacturerName"] != DBNull.Value ? reader["ManufacturerName"].ToString() : "Неизвестно",
-                                Category = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() : "Без категории",
-                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : "",
+                                Image = reader["PictureHref"] != DBNull.Value ? Convert.ToString(reader["PictureHref"]) : null,
+                                Manufacturer = reader["ManufacturerName"] != DBNull.Value ? Convert.ToString(reader["ManufacturerName"]) : "Неизвестно",
+                                Category = reader["CategoryName"] != DBNull.Value ? Convert.ToString(reader["CategoryName"]) : "Без категории",
+                                Description = reader["Description"] != DBNull.Value ? Convert.ToString(reader["Description"]) : "",
                                 Composition = "Натуральная кожа",
                                 TotalQuantity = Convert.ToInt32(reader["TotalQuantity"])
                             });
@@ -130,7 +129,7 @@ namespace BootProject.Data
             return list;
         }
 
-        public void CreateFullOrder(string login, List<CartItem> cartItems)
+        public void CreateOrder(string login, int productId, int sizeId, int quantity)
         {
             using (var connection = new SqlConnection(ConnectionString))
             {
@@ -139,41 +138,133 @@ namespace BootProject.Data
                 {
                     try
                     {
-                        DateTime currentTime = DateTime.Now;
-
-                        foreach (var item in cartItems)
+                        string updateStock = "UPDATE Stock SET Quantity = Quantity - @qty WHERE ProductId = @pid AND SizeId = @sid";
+                        using (var cmd = new SqlCommand(updateStock, connection, transaction))
                         {
-                            string updateStock = "UPDATE Stock SET Quantity = Quantity - @qty WHERE ProductId = @pid AND SizeId = @sid";
-                            using (var cmd = new SqlCommand(updateStock, connection, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@qty", item.Quantity);
-                                cmd.Parameters.AddWithValue("@pid", item.ProductId);
-                                cmd.Parameters.AddWithValue("@sid", item.SizeId);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            string insertOrder = @"INSERT INTO Orders (OrderDate, UserLogin, ProductId, SizeId, Quantity) 
-                                                   VALUES (@date, @login, @pid, @sid, @qty)";
-                            using (var cmd = new SqlCommand(insertOrder, connection, transaction))
-                            {
-                                cmd.Parameters.AddWithValue("@date", currentTime);
-                                cmd.Parameters.AddWithValue("@login", login);
-                                cmd.Parameters.AddWithValue("@pid", item.ProductId);
-                                cmd.Parameters.AddWithValue("@sid", item.SizeId);
-                                cmd.Parameters.AddWithValue("@qty", item.Quantity);
-                                cmd.ExecuteNonQuery();
-                            }
-
-                            currentTime = currentTime.AddMilliseconds(1);
+                            cmd.Parameters.AddWithValue("@qty", quantity);
+                            cmd.Parameters.AddWithValue("@pid", productId);
+                            cmd.Parameters.AddWithValue("@sid", sizeId);
+                            cmd.ExecuteNonQuery();
+                        }
+                        string insertOrder = "INSERT INTO Orders (OrderDate, UserLogin, ProductId, SizeId, Quantity) VALUES (SYSDATETIME(), @login, @pid, @sid, @qty)";
+                        using (var cmd = new SqlCommand(insertOrder, connection, transaction))
+                        {
+                            cmd.Parameters.AddWithValue("@login", login);
+                            cmd.Parameters.AddWithValue("@pid", productId);
+                            cmd.Parameters.AddWithValue("@sid", sizeId);
+                            cmd.Parameters.AddWithValue("@qty", quantity);
+                            cmd.ExecuteNonQuery();
                         }
                         transaction.Commit();
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        throw new InvalidOperationException("Ошибка сохранения заказа: " + ex.Message, ex);
+                        throw new InvalidOperationException("Ошибка заказа: " + ex.Message, ex);
                     }
                 }
+            }
+        }
+
+        public List<OrderInfo> GetAllOrders()
+        {
+            var list = new List<OrderInfo>();
+            const string sql = @"
+                SELECT o.OrderDate, o.UserLogin, 
+                       u.Lastname + ' ' + u.Firstname + ' ' + u.Patronymic AS FIO,
+                       p.ProductName, o.Quantity, p.Cost,
+                       o.ProductId, o.SizeId
+                FROM Orders o
+                JOIN Users u ON u.UserLogin = o.UserLogin
+                JOIN Product p ON p.ProductId = o.ProductId
+                ORDER BY o.OrderDate DESC;";
+
+            try
+            {
+                using (var conn = new SqlConnection(ConnectionString))
+                using (var cmd = new SqlCommand(sql, conn))
+                {
+                    conn.Open();
+                    using (var r = cmd.ExecuteReader())
+                    {
+                        while (r.Read())
+                        {
+                            list.Add(new OrderInfo
+                            {
+                                OrderDate = Convert.ToDateTime(r["OrderDate"]),
+                                UserLogin = r["UserLogin"].ToString(),
+                                UserFIO = r["FIO"].ToString(),
+                                ProductName = r["ProductName"].ToString(),
+                                Quantity = Convert.ToInt32(r["Quantity"]),
+                                Price = Convert.ToDecimal(r["Cost"]),
+                                ProductId = Convert.ToInt32(r["ProductId"]),
+                                SizeId = Convert.ToInt32(r["SizeId"])
+                            });
+                        }
+                    }
+                }
+            }
+            catch (Exception ex) { throw new InvalidOperationException("Ошибка загрузки заказов: " + ex.Message, ex); }
+            return list;
+        }
+
+        public void UpdateOrder(DateTime oldDate, string userLogin, int productId, int sizeId, DateTime newDate, int newQty)
+        {
+            using (var conn = new SqlConnection(ConnectionString))
+            {
+                conn.Open();
+                using (var tran = conn.BeginTransaction())
+                {
+                    try
+                    {
+                        if (newQty <= 0)
+                        {
+                            string delSql = "DELETE FROM Orders WHERE OrderDate = @oldDate AND UserLogin = @user AND ProductId = @pid AND SizeId = @sid";
+                            using (var cmd = new SqlCommand(delSql, conn, tran))
+                            {
+                                cmd.Parameters.AddWithValue("@oldDate", oldDate);
+                                cmd.Parameters.AddWithValue("@user", userLogin);
+                                cmd.Parameters.AddWithValue("@pid", productId);
+                                cmd.Parameters.AddWithValue("@sid", sizeId);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        else
+                        {
+                            string updSql = "UPDATE Orders SET OrderDate = @newDate, Quantity = @qty WHERE OrderDate = @oldDate AND UserLogin = @user AND ProductId = @pid AND SizeId = @sid";
+                            using (var cmd = new SqlCommand(updSql, conn, tran))
+                            {
+                                cmd.Parameters.AddWithValue("@newDate", newDate);
+                                cmd.Parameters.AddWithValue("@qty", newQty);
+                                cmd.Parameters.AddWithValue("@oldDate", oldDate);
+                                cmd.Parameters.AddWithValue("@user", userLogin);
+                                cmd.Parameters.AddWithValue("@pid", productId);
+                                cmd.Parameters.AddWithValue("@sid", sizeId);
+                                cmd.ExecuteNonQuery();
+                            }
+                        }
+                        tran.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        tran.Rollback();
+                        throw new InvalidOperationException("Ошибка обновления заказа: " + ex.Message, ex);
+                    }
+                }
+            }
+
+        }
+        public int GetAvailableStock(int productId, int sizeId)
+        {
+            const string sql = "SELECT Quantity FROM Stock WHERE ProductId = @pid AND SizeId = @sid";
+            using (var conn = new SqlConnection(ConnectionString))
+            using (var cmd = new SqlCommand(sql, conn))
+            {
+                cmd.Parameters.AddWithValue("@pid", productId);
+                cmd.Parameters.AddWithValue("@sid", sizeId);
+                conn.Open();
+                var result = cmd.ExecuteScalar();
+                return result != null ? Convert.ToInt32(result) : 0;
             }
         }
     }

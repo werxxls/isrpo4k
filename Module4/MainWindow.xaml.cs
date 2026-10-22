@@ -24,12 +24,18 @@ namespace BootProject
         {
             try
             {
-                _allProducts = _db.GetProducts(false, ""); // 2 аргумента
+                _allProducts = _db.GetProducts(false, "");
 
                 CategoryComboBox.Items.Clear();
                 CategoryComboBox.Items.Add("Все категории");
-                var uniqueCategories = _allProducts.Select(p => p.Category).Distinct().OrderBy(c => c);
-                foreach (var cat in uniqueCategories) CategoryComboBox.Items.Add(cat);
+
+                if (_allProducts != null)
+                {
+                    var uniqueCategories = _allProducts.Select(p => p.Category).Distinct().OrderBy(c => c);
+                    foreach (var cat in uniqueCategories)
+                        CategoryComboBox.Items.Add(cat);
+                }
+
                 CategoryComboBox.SelectedIndex = 0;
 
                 ApplyFiltersAndSort();
@@ -77,10 +83,22 @@ namespace BootProject
         private void LoginButton_Click(object sender, RoutedEventArgs e)
         {
             var loginWindow = new LoginWindow { Owner = this };
+
             if (loginWindow.ShowDialog() == true)
             {
-                var authWindow = new AuthUserWindow(loginWindow.CurrentUser);
-                authWindow.Show();
+                var user = loginWindow.CurrentUser;
+
+                if (user.RoleName == "Менеджер" || user.RoleName == "Администратор")
+                {
+                    var adminWindow = new AdminManagerWindow(user);
+                    adminWindow.Show();
+                }
+                else
+                {
+                    var authWindow = new AuthUserWindow(user);
+                    authWindow.Show();
+                }
+
                 this.Close();
             }
         }

@@ -20,6 +20,12 @@ namespace BootProject
             InitializeComponent();
             _currentUser = user;
             UserFullNameText.Text = _currentUser.FullName;
+
+            if (_currentUser.RoleName == "Администратор" || _currentUser.RoleName == "Менеджер")
+            {
+                AdminPanelButton.Visibility = Visibility.Visible;
+            }
+
             Loaded += (s, e) => LoadCatalog();
         }
 
@@ -27,7 +33,7 @@ namespace BootProject
         {
             try
             {
-                _allProducts = _db.GetProducts(true, _currentUser.Login); // 2 аргумента
+                _allProducts = _db.GetProducts(true, _currentUser.Login);
 
                 CategoryComboBox.Items.Clear();
                 CategoryComboBox.Items.Add("Все категории");
@@ -79,16 +85,15 @@ namespace BootProject
             }
         }
 
-        private void CartButton_Click(object sender, RoutedEventArgs e)
+        private void AdminPanelButton_Click(object sender, RoutedEventArgs e)
         {
-            var cartWindow = new CartWindow(_currentUser) { Owner = this };
-            cartWindow.ShowDialog();
-            LoadCatalog();
+            var adminWindow = new AdminManagerWindow(_currentUser);
+            adminWindow.Show();
+            this.Close();
         }
 
         private void LogoutButton_Click(object sender, RoutedEventArgs e)
         {
-            OrderProductWindow.SharedCart.Clear();
             var mainWindow = new MainWindow();
             mainWindow.Show();
             this.Close();
