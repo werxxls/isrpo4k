@@ -43,17 +43,17 @@ namespace BootProject.Data
             catch (Exception ex) { throw new InvalidOperationException("SQL Ошибка: " + ex.Message, ex); }
         }
 
-        public List<Product> GetProducts(bool isAuthorized)
+        public List<Product> GetProducts(bool isAuthorized, string login)
         {
             var products = new List<Product>();
+
             const string sql = @"
                 SELECT p.ProductId, p.ProductName, p.Cost, p.PictureHref, p.Description,
                        m.Name AS ManufacturerName, c.CategoryName, 
                        ISNULL(SUM(s.Quantity), 0) AS TotalQuantity,
                        (SELECT COUNT(*) FROM Orders o 
-                        WHERE o.ProductId = p.ProductId 
-                        AND MONTH(o.OrderDate) = MONTH(DATEADD(month, -1, GETDATE()))
-                        AND YEAR(o.OrderDate) = YEAR(DATEADD(month, -1, GETDATE()))) AS OrdersLastMonth
+                        WHERE o.ProductId = p.ProductId AND o.UserLogin = @login
+                        AND o.OrderDate >= DATEADD(day, -30, GETDATE())) AS RecentOrders
                 FROM Product p
                 LEFT JOIN ProductManufactor pm ON pm.ProductId = p.ProductId
                 LEFT JOIN Manufactor m        ON m.ManufactorId = pm.ManufactorId
@@ -68,26 +68,30 @@ namespace BootProject.Data
                 using (var connection = new SqlConnection(ConnectionString))
                 using (var command = new SqlCommand(sql, connection))
                 {
+                    // Если логин null, подставляем пустую строку
+                    command.Parameters.AddWithValue("@login", login ?? "");
                     connection.Open();
                     using (var reader = command.ExecuteReader())
                     {
                         while (reader.Read())
                         {
                             decimal basePrice = Convert.ToDecimal(reader["Cost"]);
-                            int ordersLastMonth = Convert.ToInt32(reader["OrdersLastMonth"]);
+                            int recentOrders = Convert.ToInt32(reader["RecentOrders"]);
 
-                            decimal finalPrice = (isAuthorized && ordersLastMonth == 0) ? basePrice * 0.75m : basePrice;
+                            // Скидка 25%
+                            decimal finalPrice = (isAuthorized && recentOrders == 0) ? basePrice * 0.75m : basePrice;
 
                             products.Add(new Product
                             {
                                 ProductId = Convert.ToInt32(reader["ProductId"]),
-                                Name = reader["ProductName"].ToString(),
+                                Name = Convert.ToString(reader["ProductName"]),
                                 Price = basePrice,
                                 FinalPrice = finalPrice,
-                                Image = reader["PictureHref"] != DBNull.Value ? reader["PictureHref"].ToString() : null,
-                                Manufacturer = reader["ManufacturerName"] != DBNull.Value ? reader["ManufacturerName"].ToString() : "Неизвестно",
-                                Category = reader["CategoryName"] != DBNull.Value ? reader["CategoryName"].ToString() : "Без категории",
-                                Description = reader["Description"] != DBNull.Value ? reader["Description"].ToString() : "",
+                                // Защита от null
+                                Image = reader["PictureHref"] != DBNull.Value ? Convert.ToString(reader["PictureHref"]) : null,
+                                Manufacturer = reader["ManufacturerName"] != DBNull.Value ? Convert.ToString(reader["ManufacturerName"]) : "Неизвестно",
+                                Category = reader["CategoryName"] != DBNull.Value ? Convert.ToString(reader["CategoryName"]) : "Без категории",
+                                Description = reader["Description"] != DBNull.Value ? Convert.ToString(reader["Description"]) : "",
                                 Composition = "Натуральная кожа",
                                 TotalQuantity = Convert.ToInt32(reader["TotalQuantity"])
                             });
@@ -98,7 +102,6 @@ namespace BootProject.Data
             catch (Exception ex) { throw new InvalidOperationException("Ошибка БД: " + ex.Message, ex); }
             return products;
         }
-
         public List<SizeInfo> GetSizes(int productId)
         {
             var list = new List<SizeInfo>();

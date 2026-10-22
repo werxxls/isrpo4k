@@ -28,19 +28,9 @@ namespace BootProject
             {
                 var sizes = _db.GetSizes(_product.ProductId);
                 SizeComboBox.ItemsSource = sizes;
-
-                if (sizes.Count > 0)
-                    SizeComboBox.SelectedIndex = 0;
-                else
-                {
-                    MessageBox.Show("Этого товара нет в наличии.", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    OrderButton_Disable();
-                }
+                if (sizes.Count > 0) SizeComboBox.SelectedIndex = 0;
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка загрузки размеров: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
-            }
+            catch (Exception ex) { MessageBox.Show("Ошибка загрузки размеров: " + ex.Message); }
         }
 
         private void SizeComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -48,18 +38,15 @@ namespace BootProject
             if (SizeComboBox.SelectedItem is SizeInfo size)
             {
                 _maxQuantity = size.Quantity;
-                StockInfoText.Text = $"Доступно на складе: {_maxQuantity} шт.";
+                StockInfoText.Text = $"На складе: {_maxQuantity} шт.";
                 QuantityTextBox.Text = "1";
             }
         }
 
         private void MinusButton_Click(object sender, RoutedEventArgs e)
         {
-            if (int.TryParse(QuantityTextBox.Text, out int currentQty))
-            {
-                if (currentQty > 1)
-                    QuantityTextBox.Text = (currentQty - 1).ToString();
-            }
+            if (int.TryParse(QuantityTextBox.Text, out int currentQty) && currentQty > 1)
+                QuantityTextBox.Text = (currentQty - 1).ToString();
         }
 
         private void PlusButton_Click(object sender, RoutedEventArgs e)
@@ -69,57 +56,47 @@ namespace BootProject
                 if (currentQty < _maxQuantity)
                     QuantityTextBox.Text = (currentQty + 1).ToString();
                 else
-                    MessageBox.Show($"На складе только {_maxQuantity} шт. этого размера!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    MessageBox.Show($"На складе только {_maxQuantity} шт.!");
             }
         }
 
         private void Order_Click(object sender, RoutedEventArgs e)
         {
-            if (SizeComboBox.SelectedItem == null)
+            if (!(SizeComboBox.SelectedItem is SizeInfo selectedSize) || _maxQuantity == 0) return;
+            if (!int.TryParse(QuantityTextBox.Text, out int qty) || qty <= 0) return;
+
+            if (qty > _maxQuantity)
             {
-                MessageBox.Show("Выберите размер!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
+                MessageBox.Show($"На складе только {_maxQuantity} шт.!", "Ошибка", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
 
-            if (!int.TryParse(QuantityTextBox.Text, out int qty) || qty <= 0)
-            {
-                MessageBox.Show("Некорректное количество!", "Внимание", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
+            // СЧИТАЕМ ИТОГОВУЮ СУММУ (Цена со скидкой * Количество)
+            decimal totalPrice = _product.FinalPrice * qty;
 
-            SizeInfo selectedSize = (SizeInfo)SizeComboBox.SelectedItem;
-
-            if (qty > selectedSize.Quantity)
-            {
-                MessageBox.Show($"На складе только {selectedSize.Quantity} шт. этого размера!", "Недостаточно товара", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
-
+            // ВЫВОДИМ ОКНО ПОДТВЕРЖДЕНИЯ С СУММОЙ
             var result = MessageBox.Show(
-                $"Вы действительно хотите заказать {qty} шт. размера {selectedSize.SizeValue}?",
+                $"Вы действительно хотите заказать {qty} шт. размера {selectedSize.SizeValue}?\n\n" +
+                $"Сумма заказа: {totalPrice:N0} ₽",
                 "Подтверждение заказа",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Question);
 
-            if (result != MessageBoxResult.Yes)
-                return;
+            if (result != MessageBoxResult.Yes) return;
 
             try
             {
+                // Сохраняем в базу (без суммы, так как в БД нет такой колонки, только количество)
                 _db.CreateOrder(_user.Login, _product.ProductId, selectedSize.SizeId, qty);
                 MessageBox.Show("Заказ успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
-                Close();
+                this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка при создании заказа: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void OrderButton_Disable()
-        {
-            var orderButton = (Button)this.FindName("OrderButton");
-            if (orderButton != null) orderButton.IsEnabled = false;
-        }
+        private void Close_Click(object sender, RoutedEventArgs e) => this.Close();
     }
 }

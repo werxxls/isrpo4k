@@ -12,36 +12,38 @@ namespace BootProject
     public partial class MainWindow : Window
     {
         private readonly DatabaseContext _db = new DatabaseContext();
-        private List<Product> _allProducts;
+        private List<Product> _allProducts; // ПЕРЕМЕННАЯ
 
         public MainWindow()
         {
             InitializeComponent();
-            Loaded += MainWindow_Loaded;
-        }
-
-        private void MainWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            LoadCatalog();
+            Loaded += (s, e) => LoadCatalog();
         }
 
         private void LoadCatalog()
         {
             try
             {
-                _allProducts = _db.GetProducts(false);
+                // ЗДЕСЬ МЫ ПРИСВАИВАЕМ ЗНАЧЕНИЕ
+                _allProducts = _db.GetProducts(false, "");
 
                 CategoryComboBox.Items.Clear();
                 CategoryComboBox.Items.Add("Все категории");
-                var uniqueCategories = _allProducts.Select(p => p.Category).Distinct().OrderBy(c => c);
-                foreach (var cat in uniqueCategories) CategoryComboBox.Items.Add(cat);
+
+                if (_allProducts != null)
+                {
+                    var uniqueCategories = _allProducts.Select(p => p.Category).Distinct().OrderBy(c => c);
+                    foreach (var cat in uniqueCategories)
+                        CategoryComboBox.Items.Add(cat);
+                }
+
                 CategoryComboBox.SelectedIndex = 0;
 
                 ApplyFiltersAndSort();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка загрузки: " + ex.Message, "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show("Не удалось загрузить данные.\n\n" + ex.Message, "Ошибка БД", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -52,15 +54,11 @@ namespace BootProject
 
             string searchText = SearchTextBox.Text?.Trim().ToLower();
             if (!string.IsNullOrEmpty(searchText))
-            {
                 query = query.Where(p => (p.Name != null && p.Name.ToLower().Contains(searchText)) || (p.Description != null && p.Description.ToLower().Contains(searchText)));
-            }
 
             string selectedCategory = CategoryComboBox.SelectedItem as string;
             if (!string.IsNullOrEmpty(selectedCategory) && selectedCategory != "Все категории")
-            {
                 query = query.Where(p => p.Category == selectedCategory);
-            }
 
             if (SortComboBox.SelectedIndex == 1) query = query.OrderBy(p => p.Price);
             else if (SortComboBox.SelectedIndex == 2) query = query.OrderByDescending(p => p.Price);

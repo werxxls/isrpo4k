@@ -20,19 +20,14 @@ namespace BootProject
             InitializeComponent();
             _currentUser = user;
             UserFullNameText.Text = _currentUser.FullName;
-            Loaded += AuthUserWindow_Loaded;
-        }
-
-        private void AuthUserWindow_Loaded(object sender, RoutedEventArgs e)
-        {
-            LoadCatalog();
+            Loaded += (s, e) => LoadCatalog();
         }
 
         private void LoadCatalog()
         {
             try
             {
-                _allProducts = _db.GetProducts(true);
+                _allProducts = _db.GetProducts(true, _currentUser.Login);
 
                 CategoryComboBox.Items.Clear();
                 CategoryComboBox.Items.Add("Все категории");
@@ -42,10 +37,7 @@ namespace BootProject
 
                 ApplyFiltersAndSort();
             }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка загрузки: " + ex.Message);
-            }
+            catch (Exception ex) { MessageBox.Show("Ошибка загрузки: " + ex.Message); }
         }
 
         private void ApplyFiltersAndSort()
@@ -55,18 +47,14 @@ namespace BootProject
 
             string searchText = SearchTextBox.Text?.Trim().ToLower();
             if (!string.IsNullOrEmpty(searchText))
-            {
                 query = query.Where(p => (p.Name != null && p.Name.ToLower().Contains(searchText)) || (p.Description != null && p.Description.ToLower().Contains(searchText)));
-            }
 
             string selectedCategory = CategoryComboBox.SelectedItem as string;
             if (!string.IsNullOrEmpty(selectedCategory) && selectedCategory != "Все категории")
-            {
                 query = query.Where(p => p.Category == selectedCategory);
-            }
 
-            if (SortComboBox.SelectedIndex == 1) query = query.OrderBy(p => p.Price);
-            else if (SortComboBox.SelectedIndex == 2) query = query.OrderByDescending(p => p.Price);
+            if (SortComboBox.SelectedIndex == 1) query = query.OrderBy(p => p.FinalPrice);
+            else if (SortComboBox.SelectedIndex == 2) query = query.OrderByDescending(p => p.FinalPrice);
 
             CatalogPanel.Children.Clear();
             foreach (var product in query)
