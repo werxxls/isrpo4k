@@ -12,7 +12,7 @@ namespace BootProject
     public partial class MainWindow : Window
     {
         private readonly DatabaseContext _db = new DatabaseContext();
-        private List<Product> _allProducts; // ПЕРЕМЕННАЯ
+        private List<Product> _allProducts;
 
         public MainWindow()
         {
@@ -24,7 +24,6 @@ namespace BootProject
         {
             try
             {
-                // ЗДЕСЬ МЫ ПРИСВАИВАЕМ ЗНАЧЕНИЕ
                 _allProducts = _db.GetProducts(false, "");
 
                 CategoryComboBox.Items.Clear();

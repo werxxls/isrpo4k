@@ -68,7 +68,6 @@ namespace BootProject.Data
                 using (var connection = new SqlConnection(ConnectionString))
                 using (var command = new SqlCommand(sql, connection))
                 {
-                    // Если логин null, подставляем пустую строку
                     command.Parameters.AddWithValue("@login", login ?? "");
                     connection.Open();
                     using (var reader = command.ExecuteReader())
@@ -78,7 +77,6 @@ namespace BootProject.Data
                             decimal basePrice = Convert.ToDecimal(reader["Cost"]);
                             int recentOrders = Convert.ToInt32(reader["RecentOrders"]);
 
-                            // Скидка 25%
                             decimal finalPrice = (isAuthorized && recentOrders == 0) ? basePrice * 0.75m : basePrice;
 
                             products.Add(new Product
@@ -87,7 +85,6 @@ namespace BootProject.Data
                                 Name = Convert.ToString(reader["ProductName"]),
                                 Price = basePrice,
                                 FinalPrice = finalPrice,
-                                // Защита от null
                                 Image = reader["PictureHref"] != DBNull.Value ? Convert.ToString(reader["PictureHref"]) : null,
                                 Manufacturer = reader["ManufacturerName"] != DBNull.Value ? Convert.ToString(reader["ManufacturerName"]) : "Неизвестно",
                                 Category = reader["CategoryName"] != DBNull.Value ? Convert.ToString(reader["CategoryName"]) : "Без категории",

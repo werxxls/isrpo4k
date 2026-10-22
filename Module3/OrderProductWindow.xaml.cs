@@ -71,10 +71,8 @@ namespace BootProject
                 return;
             }
 
-            // СЧИТАЕМ ИТОГОВУЮ СУММУ (Цена со скидкой * Количество)
             decimal totalPrice = _product.FinalPrice * qty;
 
-            // ВЫВОДИМ ОКНО ПОДТВЕРЖДЕНИЯ С СУММОЙ
             var result = MessageBox.Show(
                 $"Вы действительно хотите заказать {qty} шт. размера {selectedSize.SizeValue}?\n\n" +
                 $"Сумма заказа: {totalPrice:N0} ₽",
@@ -86,7 +84,6 @@ namespace BootProject
 
             try
             {
-                // Сохраняем в базу (без суммы, так как в БД нет такой колонки, только количество)
                 _db.CreateOrder(_user.Login, _product.ProductId, selectedSize.SizeId, qty);
                 MessageBox.Show("Заказ успешно создан!", "Успех", MessageBoxButton.OK, MessageBoxImage.Information);
                 this.Close();
