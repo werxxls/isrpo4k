@@ -166,17 +166,21 @@ namespace BootProject.Data
             }
         }
 
+
         public List<OrderInfo> GetAllOrders()
         {
             var list = new List<OrderInfo>();
             const string sql = @"
                 SELECT o.OrderDate, o.UserLogin, 
                        u.Lastname + ' ' + u.Firstname + ' ' + u.Patronymic AS FIO,
-                       p.ProductName, o.Quantity, p.Cost,
-                       o.ProductId, o.SizeId
+                       p.ProductName, m.Name AS Manufacturer, s.SizeValue, 
+                       o.Quantity, p.Cost, o.ProductId, o.SizeId
                 FROM Orders o
                 JOIN Users u ON u.UserLogin = o.UserLogin
                 JOIN Product p ON p.ProductId = o.ProductId
+                JOIN Size s ON s.SizeId = o.SizeId
+                JOIN ProductManufactor pm ON pm.ProductId = p.ProductId
+                JOIN Manufactor m ON m.ManufactorId = pm.ManufactorId
                 ORDER BY o.OrderDate DESC;";
 
             try
@@ -195,6 +199,8 @@ namespace BootProject.Data
                                 UserLogin = r["UserLogin"].ToString(),
                                 UserFIO = r["FIO"].ToString(),
                                 ProductName = r["ProductName"].ToString(),
+                                Manufacturer = r["Manufacturer"].ToString(),
+                                SizeValue = r["SizeValue"].ToString(),
                                 Quantity = Convert.ToInt32(r["Quantity"]),
                                 Price = Convert.ToDecimal(r["Cost"]),
                                 ProductId = Convert.ToInt32(r["ProductId"]),
@@ -252,8 +258,8 @@ namespace BootProject.Data
                     }
                 }
             }
-
         }
+
         public int GetAvailableStock(int productId, int sizeId)
         {
             const string sql = "SELECT Quantity FROM Stock WHERE ProductId = @pid AND SizeId = @sid";

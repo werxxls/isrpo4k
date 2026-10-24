@@ -3,8 +3,10 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="Управление заказами"
-    Width="700"
-    Height="500"
+    MinWidth="950"
+    MinHeight="500"
+    MaxWidth="1200"
+    MaxHeight="650"
     Background="{StaticResource main}"
     WindowStartupLocation="CenterOwner">
     <Grid Margin="15">
@@ -22,15 +24,41 @@
             IsReadOnly="True">
             <DataGrid.Columns>
                 <DataGridTextColumn
-                    Width="200"
+                    Width="180"
                     Binding="{Binding UserFIO}"
                     Header="Кто заказал" />
+
                 <DataGridTextColumn
                     Width="*"
                     Binding="{Binding ProductName}"
-                    Header="Что заказал" />
+                    Header="Товар" />
 
-                <DataGridTemplateColumn Width="150" Header="Действие">
+                <DataGridTextColumn
+                    Width="120"
+                    Binding="{Binding Manufacturer}"
+                    Header="Производство" />
+
+                <DataGridTextColumn
+                    Width="70"
+                    Binding="{Binding SizeValue}"
+                    Header="Размер" />
+
+                <DataGridTextColumn
+                    Width="70"
+                    Binding="{Binding Quantity}"
+                    Header="Кол-во" />
+
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding Price, StringFormat='{}{0:N0} ₽'}"
+                    Header="Цена за шт." />
+
+                <DataGridTextColumn
+                    Width="100"
+                    Binding="{Binding Total, StringFormat='{}{0:N0} ₽'}"
+                    Header="Итого" />
+
+                <DataGridTemplateColumn Width="130" Header="Действие">
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
                             <Button

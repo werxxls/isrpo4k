@@ -24,7 +24,7 @@ namespace BootProject
 
             if (_currentUser.RoleName == "Менеджер")
             {
-                OrdersDataGrid.Columns[2].Visibility = Visibility.Collapsed;
+                OrdersDataGrid.Columns[7].Visibility = Visibility.Collapsed;
             }
         }
 
